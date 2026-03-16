@@ -36,8 +36,22 @@ CREATE TABLE IF NOT EXISTS transcripts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS summaries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID NOT NULL UNIQUE REFERENCES jobs(id) ON DELETE CASCADE,
+  headline TEXT,
+  subtitle TEXT,
+  summary_text TEXT,
+  key_quotes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  article_draft TEXT,
+  seo_description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_artifacts_job_id ON artifacts(job_id);
+CREATE INDEX IF NOT EXISTS idx_summaries_job_id ON summaries(job_id);
 
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
@@ -50,11 +64,14 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_jobs_updated_at ON jobs;
 CREATE TRIGGER trg_jobs_updated_at
 BEFORE UPDATE ON jobs
-FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 DROP TRIGGER IF EXISTS trg_transcripts_updated_at ON transcripts;
 CREATE TRIGGER trg_transcripts_updated_at
 BEFORE UPDATE ON transcripts
-FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_summaries_updated_at ON summaries;
+CREATE TRIGGER trg_summaries_updated_at
+BEFORE UPDATE ON summaries
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
