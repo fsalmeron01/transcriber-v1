@@ -1,4 +1,5 @@
-faster-whisper==1.0.3
-python-docx==1.1.2
-psycopg[binary]==3.2.1
-redis==5.0.8
+faster-whisper
+python-docx
+psycopg2-binary
+redis
+requests

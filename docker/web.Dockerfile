@@ -13,11 +13,9 @@ RUN npm install
 
 COPY . .
 
-# Build the web app
 WORKDIR /app/apps/web
 RUN npm run build
 
-# Make entrypoint executable
 WORKDIR /app
 RUN chmod +x /app/docker/entrypoint.sh
 
