@@ -5,93 +5,102 @@ import { useParams } from "next/navigation";
 
 const POLL_INTERVAL = 5000;
 
-function statusLabel(status) {
-  const map = { queued: "QUEUED", fetching: "FETCHING", transcribing: "TRANSCRIBING", completed: "COMPLETE", failed: "FAILED" };
-  return map[status] || status.toUpperCase();
-}
-function statusColor(status) {
-  if (status === "completed") return "var(--green)";
-  if (status === "failed") return "var(--red-err)";
+function statusColor(s) {
+  if (s === "completed") return "var(--green)";
+  if (s === "failed")    return "var(--red-err)";
   return "var(--ct-blue-light)";
 }
 
-function Rule() {
-  return <div style={{ borderTop: "1px solid var(--rule)", margin: "28px 0" }} />;
-}
-
-function Tag({ children, color = "var(--muted)" }) {
+function Tag({ children, color = "var(--ct-blue-light)" }) {
   return (
-    <span style={{
-      fontFamily: "var(--font-mono)",
-      fontSize: 10, letterSpacing: 2,
-      textTransform: "uppercase",
-      color,
-      borderBottom: `1px solid ${color}`,
-      paddingBottom: 3,
-      display: "inline-block",
-      marginBottom: 16,
-      opacity: 0.9,
-    }}>{children}</span>
+    <div style={{
+      fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2,
+      textTransform: "uppercase", color,
+      borderBottom: `1px solid ${color}`, paddingBottom: 4,
+      display: "inline-block", marginBottom: 16, opacity: 0.9,
+    }}>{children}</div>
   );
 }
 
-function DownloadPill({ href, label, ext }) {
-  const colors = {
-    mp3: "#e87e4a", txt: "#6db888", docx: "#6b9ae8",
-    srt: "var(--ct-blue-light)", vtt: "var(--ct-blue-light)",
-  };
-  const c = colors[ext] || "var(--text-dim)";
+function ScoreBadge({ score, max = 100, label }) {
+  const pct = Math.round((score / max) * 100);
+  const color = pct >= 80 ? "var(--green)" : pct >= 55 ? "#e6b84a" : "var(--red-err)";
   return (
-    <a href={href} style={{
+    <div style={{
       display: "inline-flex", alignItems: "center", gap: 8,
-      padding: "8px 16px",
-      background: "var(--ink)",
-      border: `1px solid ${c}`,
-      borderRadius: 8,
-      color: c,
-      fontSize: 13,
-      fontFamily: "var(--font-mono)",
-      fontWeight: 500,
-      textDecoration: "none",
-      marginRight: 10, marginBottom: 10,
-      transition: "background 0.15s",
+      padding: "6px 14px",
+      background: "var(--ink)", border: `1px solid ${color}`,
+      borderRadius: 8, marginRight: 10, marginBottom: 8,
     }}>
-      ↓ {label}
-    </a>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>{score}</span>
+      <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>/{max}<br />{label}</span>
+    </div>
+  );
+}
+
+function RiskBadge({ level }) {
+  const map = {
+    low:      { color: "var(--green)",    icon: "🟢", label: "Low Risk" },
+    moderate: { color: "#e6b84a",         icon: "🟡", label: "Moderate Risk" },
+    high:     { color: "var(--red-err)",  icon: "🔴", label: "High Risk" },
+    unknown:  { color: "var(--muted)",    icon: "⚪", label: "Not assessed" },
+  };
+  const { color, icon, label } = map[level] || map.unknown;
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono)", fontSize: 12,
+      color, padding: "4px 12px",
+      border: `1px solid ${color}`, borderRadius: 6,
+    }}>{icon} Legal: {label}</span>
   );
 }
 
 function CopyBtn({ text, label = "Copy" }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      style={{
-        background: "transparent", border: "1px solid var(--rule)",
-        color: copied ? "var(--green)" : "var(--muted)",
-        borderRadius: 6, padding: "4px 12px",
-        cursor: "pointer", fontSize: 12,
-        fontFamily: "var(--font-mono)", letterSpacing: 0.5,
-        transition: "all 0.15s",
-      }}
-    >
+    <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }} style={{
+      background: "transparent", border: "1px solid var(--rule)",
+      color: copied ? "var(--green)" : "var(--muted)",
+      borderRadius: 6, padding: "4px 12px", cursor: "pointer",
+      fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: 0.5,
+      transition: "all 0.15s",
+    }}>
       {copied ? "✓ Copied" : label}
     </button>
   );
 }
 
-function Tab({ label, active, onClick }) {
+function TabBtn({ label, active, onClick }) {
   return (
     <button onClick={onClick} style={{
       background: "none", border: "none",
-      borderBottom: active ? "2px solid var(--ct-blue-light)" : "2px solid transparent",
+      borderBottom: active ? "2px solid var(--ct-blue)" : "2px solid transparent",
       color: active ? "var(--ct-blue-light)" : "var(--text-dim)",
-      padding: "10px 20px",
-      cursor: "pointer",
-      fontFamily: "var(--font-body)",
-      fontSize: 14, fontWeight: active ? 600 : 400,
-      transition: "all 0.15s",
+      padding: "10px 18px", cursor: "pointer",
+      fontFamily: "var(--font-body)", fontSize: 13, fontWeight: active ? 600 : 400,
+      transition: "all 0.15s", whiteSpace: "nowrap",
     }}>{label}</button>
+  );
+}
+
+function CheckRow({ label, value }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--rule)" }}>
+      <span style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>{label}</span>
+      <span style={{ fontSize: 14, color: value ? "var(--green)" : "var(--red-err)" }}>{value ? "✓" : "✕"}</span>
+    </div>
+  );
+}
+
+function Pill({ children, color = "var(--ct-blue-dark)", border = "var(--ct-blue)" }) {
+  return (
+    <span style={{
+      display: "inline-block",
+      padding: "4px 12px", marginRight: 6, marginBottom: 6,
+      background: color, border: `1px solid ${border}`,
+      borderRadius: 20, fontSize: 12, color: "var(--text)",
+      fontFamily: "var(--font-mono)",
+    }}>{children}</span>
   );
 }
 
@@ -99,7 +108,7 @@ export default function JobPage() {
   const params = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("transcript");
+  const [tab, setTab] = useState("article");
 
   const fetchJob = useCallback(async () => {
     try {
@@ -112,192 +121,360 @@ export default function JobPage() {
   }, [params.id]);
 
   useEffect(() => { fetchJob(); }, [fetchJob]);
-
   useEffect(() => {
     if (!job) return;
-    const done = (job.status === "completed" || job.status === "failed") && job.summary;
+    const done = (job.status === "completed" || job.status === "failed") && job.summary?.article_draft;
     if (done) return;
     const t = setInterval(fetchJob, POLL_INTERVAL);
     return () => clearInterval(t);
   }, [job, fetchJob]);
 
   if (loading) return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px" }}>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: "80px 24px" }}>
       <p style={{ fontFamily: "var(--font-mono)", color: "var(--muted)", letterSpacing: 1 }}>LOADING...</p>
     </main>
   );
 
   if (!job) return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: "80px 24px" }}>
-      <a href="/" style={{ color: "var(--ct-blue-light)", fontFamily: "var(--font-mono)", fontSize: 13 }}>← Back</a>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: "80px 24px" }}>
+      <a href="/" style={{ color: "var(--ct-blue-light)", fontFamily: "var(--font-mono)", fontSize: 12 }}>← LEDE</a>
       <h1 style={{ fontFamily: "var(--font-display)", marginTop: 24 }}>Job not found</h1>
     </main>
   );
 
+  const s = job.summary;
   const isActive = job.status !== "completed" && job.status !== "failed";
   const hasSRT = Array.isArray(job.transcript?.segments_json) && job.transcript.segments_json.length > 0;
-  const hasSummary = !!job.summary?.headline;
+  const yoast = s?.yoast_json || {};
+  const readability = s?.readability_json || {};
+  const seoChecks = s?.yoast_json ? null : null;
+
+  const tabs = [
+    { id: "article",     label: s?.article_draft ? `${s.mode_emoji || "📰"} Article Draft` : "Article Draft" },
+    { id: "wordpress",   label: "WordPress Package" },
+    { id: "seo",         label: `SEO ${s?.seo_strength_score ? `(${s.seo_strength_score}/9)` : ""}` },
+    { id: "legal",       label: `Legal ${s?.legal_risk_level ? `· ${s.legal_risk_level.toUpperCase()}` : ""}` },
+    { id: "quotes",      label: `Key Quotes${s?.key_quotes_json?.length ? ` (${s.key_quotes_json.length})` : ""}` },
+    { id: "transcript",  label: "Transcript" },
+  ];
 
   return (
-    <main style={{ maxWidth: 860, margin: "0 auto", padding: "0 24px 80px" }}>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 80px" }}>
 
-      {/* Header bar */}
-      <div style={{
-        borderBottom: "1px solid var(--rule)",
-        padding: "18px 0",
+      {/* Header */}
+      <header style={{
+        background: "var(--ct-blue-dark)",
+        borderBottom: "3px solid var(--ct-red)",
+        margin: "0 -24px 40px",
+        padding: "14px 24px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 48,
       }}>
         <a href="/" style={{
-          fontFamily: "var(--font-mono)", fontSize: 12,
-          letterSpacing: 1, color: "var(--muted)",
-          textDecoration: "none",
+          fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1.5,
+          color: "rgba(255,255,255,0.6)", textDecoration: "none",
         }}>← LEDE</a>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{
             fontFamily: "var(--font-mono)", fontSize: 11,
-            color: statusColor(job.status),
-            letterSpacing: 2,
+            color: statusColor(job.status), letterSpacing: 2,
           }}>
             {isActive && <span className="pulsing">● </span>}
-            {statusLabel(job.status)} {job.progress}%
+            {job.status.toUpperCase()} {job.progress}%
           </span>
-          {isActive && (
-            <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--muted)", letterSpacing: 1 }}>
-              AUTO-REFRESH ON
-            </span>
-          )}
+          {isActive && <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(255,255,255,0.4)", letterSpacing: 1 }}>AUTO-REFRESH</span>}
         </div>
-      </div>
+      </header>
+
+      {/* Mode badge */}
+      {s?.mode_label && (
+        <div style={{ marginBottom: 16 }}>
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 1.5,
+            padding: "4px 12px",
+            background: "var(--ct-blue-dark)", border: "1px solid var(--ct-blue)",
+            borderRadius: 4, color: "var(--ct-blue-light)",
+          }}>
+            {s.mode_emoji} {(s.mode || "").replace(/_/g, " ").toUpperCase()}
+          </span>
+        </div>
+      )}
 
       {/* Headline block */}
-      <div style={{ marginBottom: 48, animation: "fadeUp 0.5s ease both" }}>
-        {hasSummary ? (
+      <div style={{ marginBottom: 32, animation: "fadeUp 0.4s ease both" }}>
+        {s?.headline ? (
           <>
-            <Tag color="var(--ct-blue-light)">AI Analysis Complete</Tag>
             <h1 style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(28px, 5vw, 52px)",
+              fontSize: "clamp(24px, 4vw, 44px)",
               fontWeight: 900, lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              color: "#fff",
-              marginBottom: 12,
-            }}>{job.summary.headline}</h1>
-            {job.summary.subtitle && (
-              <p style={{ fontSize: 18, color: "var(--text-dim)", fontWeight: 300, lineHeight: 1.5 }}>
-                {job.summary.subtitle}
+              letterSpacing: "-0.02em", color: "#fff", marginBottom: 10,
+            }}>{s.headline}</h1>
+            {s.subtitle && (
+              <p style={{ fontSize: 17, color: "var(--text-dim)", fontWeight: 300, lineHeight: 1.5, fontStyle: "italic" }}>
+                {s.subtitle}
               </p>
             )}
           </>
         ) : (
-          <>
-            <Tag>{job.source_type.toUpperCase()} JOB</Tag>
-            <h1 style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 32, fontWeight: 700,
-              color: "var(--text-dim)",
-              marginBottom: 8,
-            }}>
-              {job.title || `Job ${job.id.slice(0, 8)}...`}
-            </h1>
-            {isActive && (
-              <p style={{ fontSize: 14, color: "var(--muted)", fontFamily: "var(--font-mono)", letterSpacing: 0.5 }}>
-                {job.status === "fetching" && "Downloading media..."}
-                {job.status === "transcribing" && "Running Whisper transcription..."}
-                {job.status === "queued" && "Waiting in queue..."}
-              </p>
-            )}
-            {!hasSummary && job.status === "completed" && (
-              <p style={{ fontSize: 13, color: "var(--ct-blue-light)", fontFamily: "var(--font-mono)", letterSpacing: 0.5 }}>
-                ✦ AI analysis in progress...
-              </p>
-            )}
-          </>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, color: "var(--text-dim)", fontWeight: 700 }}>
+            {job.title || `Job ${job.id.slice(0, 8)}...`}
+          </h1>
+        )}
+        {!s?.article_draft && job.status === "completed" && (
+          <p style={{ marginTop: 12, fontSize: 12, color: "var(--ct-blue-light)", fontFamily: "var(--font-mono)", letterSpacing: 0.5 }}>
+            ✦ Smart Mode v2 analysis in progress...
+          </p>
         )}
       </div>
 
-      {/* SEO blurb */}
-      {job.summary?.seo_description && (
-        <div style={{
-          padding: "14px 20px",
-          background: "var(--charcoal)",
-          border: "1px solid var(--rule)",
-          borderLeft: "3px solid var(--ct-blue-dark)",
-          borderRadius: "0 10px 10px 0",
-          marginBottom: 32,
-          display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16,
-        }}>
-          <p style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.6, margin: 0 }}>
-            {job.summary.seo_description}
-          </p>
-          <CopyBtn text={job.summary.seo_description} label="Copy SEO" />
+      {/* Score row */}
+      {s && (
+        <div style={{ marginBottom: 28, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          {s.headline_heat_score && <ScoreBadge score={s.headline_heat_score} max={100} label="HEADLINE HEAT" />}
+          {s.seo_strength_score  && <ScoreBadge score={s.seo_strength_score}  max={9}   label="SEO STRENGTH" />}
+          {s.legal_risk_level    && <RiskBadge level={s.legal_risk_level} />}
+          {s.headline_heat_label && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-dim)" }}>
+              {s.headline_heat_label}
+            </span>
+          )}
         </div>
       )}
 
-      {/* Source info */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: 16, marginBottom: 36,
-      }}>
-        {[
-          { label: "Source", value: job.source_type.toUpperCase() },
-          { label: "Outputs", value: (job.requested_outputs || []).join(", ").toUpperCase() },
-          { label: "Language", value: job.transcript?.language?.toUpperCase() || "—" },
-        ].map(({ label, value }) => (
-          <div key={label} style={{
-            padding: "16px 20px",
-            background: "var(--charcoal)",
-            border: "1px solid var(--rule)",
-            borderRadius: 10,
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>{label}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--text)" }}>{value}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Downloads */}
       {(job.artifacts?.length > 0 || hasSRT) && (
-        <>
+        <div style={{ marginBottom: 32 }}>
           <Tag>Downloads</Tag>
-          <div style={{ marginBottom: 36 }}>
-            {job.artifacts?.map((a) => {
+          <div>
+            {job.artifacts?.map(a => {
               const ext = a.file_name.split(".").pop().toLowerCase();
+              const colors = { mp3: "#e87e4a", txt: "var(--green)", docx: "var(--ct-blue-light)" };
+              const c = colors[ext] || "var(--text-dim)";
               return (
-                <DownloadPill
-                  key={a.id}
-                  href={`/api/jobs/${job.id}/download?path=${encodeURIComponent(a.file_path)}`}
-                  label={a.file_name}
-                  ext={ext}
-                />
+                <a key={a.id} href={`/api/jobs/${job.id}/download?path=${encodeURIComponent(a.file_path)}`} style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", marginRight: 8, marginBottom: 8,
+                  background: "var(--ink)", border: `1px solid ${c}`,
+                  borderRadius: 8, color: c, fontSize: 12,
+                  fontFamily: "var(--font-mono)", textDecoration: "none",
+                }}>↓ {a.file_name}</a>
               );
             })}
-            {hasSRT && (
-              <>
-                <DownloadPill href={`/api/jobs/${job.id}/download?format=srt`} label="transcript.srt" ext="srt" />
-                <DownloadPill href={`/api/jobs/${job.id}/download?format=vtt`} label="transcript.vtt" ext="vtt" />
-              </>
-            )}
+            {hasSRT && <>
+              <a href={`/api/jobs/${job.id}/download?format=srt`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", marginRight: 8, marginBottom: 8, background: "var(--ink)", border: "1px solid var(--ct-blue-light)", borderRadius: 8, color: "var(--ct-blue-light)", fontSize: 12, fontFamily: "var(--font-mono)", textDecoration: "none" }}>↓ transcript.srt</a>
+              <a href={`/api/jobs/${job.id}/download?format=vtt`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 14px", marginRight: 8, marginBottom: 8, background: "var(--ink)", border: "1px solid var(--ct-blue-light)", borderRadius: 8, color: "var(--ct-blue-light)", fontSize: 12, fontFamily: "var(--font-mono)", textDecoration: "none" }}>↓ transcript.vtt</a>
+            </>}
           </div>
-        </>
+        </div>
       )}
 
-      {/* Tabbed content */}
-      {(job.transcript || job.summary) && (
+      {/* Tabs */}
+      {(job.transcript || s) && (
         <>
-          <div style={{ borderBottom: "1px solid var(--rule)", marginBottom: 28, display: "flex", gap: 0 }}>
-            <Tab label="Transcript" active={tab === "transcript"} onClick={() => setTab("transcript")} />
-            <Tab
-              label={hasSummary ? "✦ Article Draft" : "Article Draft"}
-              active={tab === "article"}
-              onClick={() => setTab("article")}
-            />
-            <Tab
-              label={`Key Quotes${job.summary?.key_quotes_json?.length ? ` (${job.summary.key_quotes_json.length})` : ""}`}
-              active={tab === "quotes"}
-              onClick={() => setTab("quotes")}
-            />
+          <div style={{ borderBottom: "1px solid var(--rule)", marginBottom: 28, display: "flex", overflowX: "auto", gap: 0 }}>
+            {tabs.map(t => <TabBtn key={t.id} label={t.label} active={tab === t.id} onClick={() => setTab(t.id)} />)}
           </div>
+
+          {/* ARTICLE DRAFT */}
+          {tab === "article" && (
+            <div>
+              {s?.summary_text && (
+                <div style={{ padding: "16px 20px", background: "rgba(74,109,140,0.06)", borderLeft: "3px solid var(--ct-blue-dark)", borderRadius: "0 10px 10px 0", marginBottom: 24 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", marginBottom: 8, textTransform: "uppercase" }}>Summary</div>
+                  <p style={{ color: "var(--text-dim)", lineHeight: 1.7, margin: 0, fontSize: 15 }}>{s.summary_text}</p>
+                </div>
+              )}
+              {s?.article_draft ? (
+                <>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                    <CopyBtn text={s.article_draft} label="Copy article" />
+                  </div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 16, lineHeight: 1.9, color: "var(--text)", maxWidth: 680 }}>
+                    {s.article_draft.split("\n\n").filter(Boolean).map((para, i) => (
+                      <p key={i} style={{ marginBottom: 20, textAlign: "justify" }}>{para}</p>
+                    ))}
+                  </div>
+                  {s?.photo_guidance && (
+                    <div style={{ marginTop: 32, padding: "14px 18px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--muted)", marginBottom: 6, textTransform: "uppercase" }}>📷 Photo Guidance</div>
+                      <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.6, margin: 0 }}>{s.photo_guidance}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+                  {job.status === "completed" ? "Smart Mode v2 analysis generating..." : "Article will appear after transcription completes."}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* WORDPRESS PACKAGE */}
+          {tab === "wordpress" && (
+            <div>
+              {s ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* Newspack excerpt */}
+                  {s.newspack_excerpt && (
+                    <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", textTransform: "uppercase" }}>Newspack Excerpt</div>
+                        <CopyBtn text={s.newspack_excerpt} />
+                      </div>
+                      <p style={{ fontSize: 14, color: "var(--text-dim)", margin: 0, lineHeight: 1.6 }}>{s.newspack_excerpt}</p>
+                    </div>
+                  )}
+
+                  {/* Categories */}
+                  <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", marginBottom: 10, textTransform: "uppercase" }}>Categories</div>
+                    <div>{(s.categories_json || []).map((c, i) => <Pill key={i}>{c}</Pill>)}</div>
+                  </div>
+
+                  {/* Tags */}
+                  <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", marginBottom: 10, textTransform: "uppercase" }}>Tags</div>
+                    <div>{(s.tags_json || []).map((t, i) => <Pill key={i} color="var(--charcoal-mid)" border="var(--charcoal-light)">#{t}</Pill>)}</div>
+                  </div>
+
+                  {/* Readability */}
+                  {readability.grade_level && (
+                    <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", marginBottom: 12, textTransform: "uppercase" }}>Readability Audit</div>
+                      <CheckRow label="Two-sentence paragraph cap" value={readability.two_sentence_cap} />
+                      <CheckRow label="Active voice" value={readability.active_voice} />
+                      <CheckRow label="No speculation" value={readability.no_speculation} />
+                      <CheckRow label="Attribution present" value={readability.attribution_present} />
+                      <div style={{ padding: "8px 0", borderBottom: "1px solid var(--rule)", display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>Grade level</span>
+                        <span style={{ fontSize: 13, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{readability.grade_level}</span>
+                      </div>
+                      <div style={{ padding: "8px 0", borderBottom: "1px solid var(--rule)", display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>Tone</span>
+                        <span style={{ fontSize: 13, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{readability.tone}</span>
+                      </div>
+                      {readability.pacing && (
+                        <div style={{ padding: "8px 0" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-dim)", fontFamily: "var(--font-mono)" }}>Pacing: </span>
+                          <span style={{ fontSize: 13, color: "var(--text)", fontFamily: "var(--font-mono)" }}>{readability.pacing}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>WordPress package will appear after AI analysis completes.</p>
+              )}
+            </div>
+          )}
+
+          {/* SEO */}
+          {tab === "seo" && (
+            <div>
+              {yoast.seo_title ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {[
+                    { label: "SEO Title", value: yoast.seo_title, note: `${(yoast.seo_title || "").length}/60 chars` },
+                    { label: "Slug", value: yoast.slug },
+                    { label: "Meta Description", value: yoast.meta_description, note: `${(yoast.meta_description || "").length}/155 chars` },
+                    { label: "Focus Keyphrase", value: yoast.focus_keyphrase },
+                  ].map(({ label, value, note }) => value && (
+                    <div key={label} style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+                          {note && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)" }}>{note}</div>}
+                        </div>
+                        <CopyBtn text={value} />
+                      </div>
+                      <p style={{ fontSize: 14, color: "var(--text)", margin: 0, fontFamily: "var(--font-mono)", lineHeight: 1.5 }}>{value}</p>
+                    </div>
+                  ))}
+
+                  <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-light)", marginBottom: 12, textTransform: "uppercase" }}>Yoast Keyphrase Checks</div>
+                    <CheckRow label="Keyphrase in first 100 words" value={yoast.keyphrase_in_intro} />
+                    <CheckRow label="Keyphrase in SEO title" value={yoast.keyphrase_in_meta !== undefined ? yoast.keyphrase_in_meta : yoast.keyphrase_in_seo_title} />
+                    <CheckRow label="Keyphrase in slug" value={yoast.keyphrase_in_slug} />
+                  </div>
+
+                  {s?.seo_strength_score && (
+                    <div style={{ padding: "16px 20px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10, display: "flex", alignItems: "center", gap: 16 }}>
+                      <ScoreBadge score={s.seo_strength_score} max={9} label="SEO STRENGTH" />
+                      <span style={{ fontSize: 13, color: "var(--text-dim)" }}>
+                        {s.seo_strength_score >= 8 ? "🟢 Strong ranking potential. Ready to publish." :
+                         s.seo_strength_score >= 5 ? "🟡 Minor optimization needed." :
+                         "🔴 SEO rewrite recommended."}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>SEO data will appear after AI analysis completes.</p>
+              )}
+            </div>
+          )}
+
+          {/* LEGAL */}
+          {tab === "legal" && (
+            <div>
+              {s?.legal_risk_level ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ padding: "20px 24px", background: "var(--charcoal)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+                    <RiskBadge level={s.legal_risk_level} />
+                    <p style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.7, margin: "12px 0 0" }}>
+                      {s.legal_risk_level === "low" && "All claims appear attributed. No loaded language detected. Safe to publish."}
+                      {s.legal_risk_level === "moderate" && "Some claims may need additional attribution or softer phrasing. Review flags below before publishing."}
+                      {s.legal_risk_level === "high" && "Significant legal exposure detected. Do not publish as written. Address all flags below."}
+                      {s.legal_risk_level === "unknown" && "Legal scan not completed."}
+                    </p>
+                  </div>
+                  {(s.legal_flags_json || []).length > 0 && (
+                    <div style={{ padding: "16px 20px", background: "rgba(200,80,80,0.06)", border: "1px solid rgba(200,80,80,0.2)", borderRadius: 10 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--red-err)", marginBottom: 12, textTransform: "uppercase" }}>Flags</div>
+                      {s.legal_flags_json.map((flag, i) => (
+                        <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--rule)", fontSize: 13, color: "var(--text-dim)", lineHeight: 1.6 }}>⚠ {flag}</div>
+                      ))}
+                    </div>
+                  )}
+                  {(s.legal_flags_json || []).length === 0 && s.legal_risk_level === "low" && (
+                    <div style={{ padding: "16px 20px", background: "rgba(90,170,120,0.06)", border: "1px solid rgba(90,170,120,0.2)", borderRadius: 10 }}>
+                      <p style={{ fontSize: 13, color: "var(--green)", fontFamily: "var(--font-mono)", margin: 0 }}>✓ No legal flags detected. Clear to publish.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>Legal scan will appear after AI analysis completes.</p>
+              )}
+            </div>
+          )}
+
+          {/* KEY QUOTES */}
+          {tab === "quotes" && (
+            <div>
+              {s?.key_quotes_json?.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {s.key_quotes_json.map((quote, i) => (
+                    <div key={i} style={{
+                      padding: "18px 22px",
+                      background: "var(--charcoal)",
+                      borderLeft: "3px solid var(--green)",
+                      borderRadius: "0 12px 12px 0",
+                      display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16,
+                    }}>
+                      <p style={{ fontFamily: "var(--font-display)", fontSize: 16, lineHeight: 1.65, color: "var(--text)", fontStyle: "italic", margin: 0, flex: 1 }}>
+                        "{quote}"
+                      </p>
+                      <CopyBtn text={`"${quote}"`} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>Key quotes will appear after analysis completes.</p>
+              )}
+            </div>
+          )}
 
           {/* TRANSCRIPT */}
           {tab === "transcript" && (
@@ -308,102 +485,17 @@ export default function JobPage() {
                     <CopyBtn text={job.transcript.clean_text} label="Copy transcript" />
                   </div>
                   <pre style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 13,
-                    lineHeight: 1.9,
-                    color: "var(--text-dim)",
-                    whiteSpace: "pre-wrap",
-                    background: "var(--charcoal)",
-                    border: "1px solid var(--rule)",
-                    borderRadius: 12,
-                    padding: 24,
-                    maxHeight: 600,
-                    overflowY: "auto",
+                    fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1.9,
+                    color: "var(--text-dim)", whiteSpace: "pre-wrap",
+                    background: "var(--charcoal)", border: "1px solid var(--rule)",
+                    borderRadius: 12, padding: 24, maxHeight: 600, overflowY: "auto",
                   }}>
                     {job.transcript.clean_text}
                   </pre>
                 </>
               ) : (
                 <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                  {isActive ? "Transcript will appear here once processing completes..." : "No transcript available."}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* ARTICLE DRAFT */}
-          {tab === "article" && (
-            <div>
-              {job.summary?.article_draft ? (
-                <>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-                    <CopyBtn text={job.summary.article_draft} label="Copy article" />
-                  </div>
-                  {job.summary.summary_text && (
-                    <div style={{
-                      padding: "16px 20px",
-                      background: "rgba(200,130,26,0.05)",
-                      borderLeft: "3px solid var(--ct-blue-dark)",
-                      borderRadius: "0 10px 10px 0",
-                      marginBottom: 28,
-                    }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: 2, color: "var(--ct-blue-dark)", marginBottom: 8, textTransform: "uppercase" }}>Summary</div>
-                      <p style={{ color: "var(--text-dim)", lineHeight: 1.7, fontSize: 15, margin: 0 }}>{job.summary.summary_text}</p>
-                    </div>
-                  )}
-                  <div style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 16, lineHeight: 1.85,
-                    color: "var(--text)",
-                    columns: "1",
-                    maxWidth: 680,
-                  }}>
-                    {job.summary.article_draft.split("\n\n").filter(Boolean).map((para, i) => (
-                      <p key={i} style={{ marginBottom: 20, textAlign: "justify" }}>{para}</p>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                  {job.status === "completed"
-                    ? "✦ AI article draft is being generated... check back in a moment."
-                    : "Article draft will be generated after transcription completes."}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* KEY QUOTES */}
-          {tab === "quotes" && (
-            <div>
-              {job.summary?.key_quotes_json?.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  {job.summary.key_quotes_json.map((quote, i) => (
-                    <div key={i} style={{
-                      padding: "20px 24px",
-                      background: "var(--charcoal)",
-                      borderLeft: "3px solid var(--green)",
-                      borderRadius: "0 12px 12px 0",
-                      display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16,
-                    }}>
-                      <p style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: 17, lineHeight: 1.6,
-                        color: "var(--text)",
-                        fontStyle: "italic",
-                        margin: 0, flex: 1,
-                      }}>
-                        "{quote}"
-                      </p>
-                      <CopyBtn text={`"${quote}"`} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                  {job.status === "completed"
-                    ? "Key quotes are being extracted..."
-                    : "Key quotes will appear after transcription completes."}
+                  {isActive ? "Transcript will appear once processing completes..." : "No transcript available."}
                 </p>
               )}
             </div>
@@ -411,33 +503,17 @@ export default function JobPage() {
         </>
       )}
 
-      {/* Error state */}
+      {/* Error */}
       {job.error_message && (
-        <>
-          <Rule />
-          <div style={{
-            padding: "14px 20px",
-            background: "rgba(217,96,96,0.06)",
-            border: "1px solid rgba(217,96,96,0.2)",
-            borderRadius: 10,
-            color: "var(--red-err)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-          }}>
-            ✕ {job.error_message}
-          </div>
-        </>
+        <div style={{ marginTop: 32, padding: "14px 20px", background: "rgba(200,80,80,0.06)", border: "1px solid rgba(200,80,80,0.2)", borderRadius: 10, color: "var(--red-err)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+          ✕ {job.error_message}
+        </div>
       )}
 
       {/* Footer */}
-      <Rule />
-      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", letterSpacing: 1 }}>
-          JOB ID: {job.id}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", letterSpacing: 1 }}>
-          LEDE · CAMDEN TRIBUNE
-        </span>
+      <div style={{ marginTop: 48, borderTop: "1px solid var(--rule)", paddingTop: 20, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", letterSpacing: 1 }}>JOB: {job.id}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", letterSpacing: 1 }}>LEDE · CAMDEN TRIBUNE</span>
       </div>
     </main>
   );

@@ -2,7 +2,7 @@
 
 **AI-powered media intelligence for local journalism.**
 
-Built by Francisco Salmeron · Powered by Claude AI
+Built by [Camden Tribune](https://camdentribune.com) · Powered by Claude AI
 
 ---
 

@@ -39,12 +39,31 @@ CREATE TABLE IF NOT EXISTS transcripts (
 CREATE TABLE IF NOT EXISTS summaries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id UUID NOT NULL UNIQUE REFERENCES jobs(id) ON DELETE CASCADE,
+  -- Story classification
+  mode TEXT,
+  mode_emoji TEXT,
+  -- Core article
   headline TEXT,
   subtitle TEXT,
   summary_text TEXT,
-  key_quotes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  newspack_excerpt TEXT,
   article_draft TEXT,
-  seo_description TEXT,
+  key_quotes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  -- WordPress / Newspack metadata
+  categories_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  tags_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  -- Yoast SEO block
+  yoast_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- Scores
+  headline_heat_score INTEGER,
+  headline_heat_label TEXT,
+  seo_strength_score INTEGER,
+  legal_risk_level TEXT,
+  legal_flags_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  -- Readability
+  readability_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  -- Photo guidance
+  photo_guidance TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -63,15 +82,12 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_jobs_updated_at ON jobs;
 CREATE TRIGGER trg_jobs_updated_at
-BEFORE UPDATE ON jobs
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 DROP TRIGGER IF EXISTS trg_transcripts_updated_at ON transcripts;
 CREATE TRIGGER trg_transcripts_updated_at
-BEFORE UPDATE ON transcripts
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+BEFORE UPDATE ON transcripts FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 DROP TRIGGER IF EXISTS trg_summaries_updated_at ON summaries;
 CREATE TRIGGER trg_summaries_updated_at
-BEFORE UPDATE ON summaries
-FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+BEFORE UPDATE ON summaries FOR EACH ROW EXECUTE FUNCTION set_updated_at();
