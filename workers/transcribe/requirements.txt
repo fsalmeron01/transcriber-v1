@@ -1,5 +1,5 @@
 faster-whisper
 python-docx
-psycopg2-binary
+psycopg[binary]
 redis
 requests
