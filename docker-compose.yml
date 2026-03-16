@@ -6,15 +6,15 @@ services:
       context: .
       dockerfile: ./docker/web.Dockerfile
     environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      APP_URL: ${APP_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       STORAGE_ROOT: ${STORAGE_ROOT}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      PORT: ${PORT}
-      APP_URL: ${APP_URL}
       PUBLIC_DOWNLOAD_BASE_URL: ${PUBLIC_DOWNLOAD_BASE_URL}
       MAX_SOURCE_URL_LENGTH: ${MAX_SOURCE_URL_LENGTH}
-      NODE_ENV: ${NODE_ENV}
     depends_on:
       - postgres
       - redis
@@ -31,6 +31,7 @@ services:
       REDIS_URL: ${REDIS_URL}
       STORAGE_ROOT: ${STORAGE_ROOT}
       YTDLP_FORMAT: ${YTDLP_FORMAT}
+      PUBLIC_DOWNLOAD_BASE_URL: ${PUBLIC_DOWNLOAD_BASE_URL}
     depends_on:
       - postgres
       - redis
@@ -48,6 +49,7 @@ services:
       STORAGE_ROOT: ${STORAGE_ROOT}
       WHISPER_MODEL: ${WHISPER_MODEL}
       WHISPER_DEVICE: ${WHISPER_DEVICE}
+      PUBLIC_DOWNLOAD_BASE_URL: ${PUBLIC_DOWNLOAD_BASE_URL}
     depends_on:
       - postgres
       - redis
@@ -63,11 +65,11 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    restart: unless-stopped
     volumes:
       - pg_data:/var/lib/postgresql/data
 
