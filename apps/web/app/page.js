@@ -30,10 +30,20 @@ const STATUS_LABELS = {
 
 const STUCK_STATUSES = ["fetching", "extracting-audio", "queued-for-transcription", "transcribing", "generating-article"];
 
+// Thresholds per status — transcribing long meetings is slow on CPU
+const STUCK_THRESHOLDS = {
+  "fetching":                  20 * 60 * 1000,  // 20 min — download should finish
+  "extracting-audio":          10 * 60 * 1000,  // 10 min — ffmpeg is fast
+  "queued-for-transcription":  10 * 60 * 1000,  // 10 min — should pick up fast
+  "transcribing":              90 * 60 * 1000,  // 90 min — CPU Whisper on 2hr meeting
+  "generating-article":        15 * 60 * 1000,  // 15 min — Claude API call
+};
+
 function isStuck(job) {
   if (!STUCK_STATUSES.includes(job.status)) return false;
+  const threshold = STUCK_THRESHOLDS[job.status] || 30 * 60 * 1000;
   const age = Date.now() - new Date(job.updated_at || job.created_at).getTime();
-  return age > 30 * 60 * 1000; // stuck if no update for 30 minutes
+  return age > threshold;
 }
 
 function statusColor(s) {
