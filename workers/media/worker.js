@@ -63,14 +63,11 @@ async function processMediaJob(jobPayload) {
 
     if (job.source_type === "direct") {
       console.log(`[media] Job ${jobId} — direct media URL`);
-      const dlPath = path.join(workDir, "source.mp4");
       await updateJob(jobId, { status: "fetching", progress: 20, title: "Direct media" });
 
-      // Always use the full safe ffmpeg flags for ALL direct URLs.
-      // These flags are harmless for plain mp4/mp3 files AND required for
-      // HLS (.m3u8), DASH, and government meeting platform streams.
-      // This means eSCRIBE, Granicus, Legistar, and any CDN stream
-      // will all work without needing separate detection logic.
+      // Step 1: Download the stream to a temp file
+      // Use .ts extension as universal container for HLS segments
+      const dlPath = path.join(workDir, "source.ts");
       console.log(`[media] Job ${jobId} — downloading with universal ffmpeg flags`);
       await runCommand("ffmpeg", [
         "-y",
@@ -80,11 +77,23 @@ async function processMediaJob(jobPayload) {
         "-probesize", "20M",
         "-i", job.source_url,
         "-c", "copy",
-        "-movflags", "+faststart",
-        "-t", "14400",   // max 4 hours — covers any meeting length
+        "-t", "14400",   // max 4 hours
         dlPath,
       ]);
-      sourcePath = dlPath;
+
+      // Step 2: Find whatever file was actually created
+      // (ffmpeg may use different extensions depending on stream type)
+      const allFiles = fs.readdirSync(workDir)
+        .map(n => path.join(workDir, n))
+        .filter(f => fs.statSync(f).isFile() && fs.statSync(f).size > 0);
+
+      if (allFiles.length === 0) {
+        throw new Error("ffmpeg produced no output file — stream may be expired or inaccessible");
+      }
+
+      // Pick the largest file (the actual media, not any tiny metadata files)
+      sourcePath = allFiles.sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)[0];
+      console.log(`[media] Job ${jobId} — downloaded: ${path.basename(sourcePath)} (${(fs.statSync(sourcePath).size / 1024 / 1024).toFixed(1)} MB)`);
     } else {
       // YouTube / Vimeo — use yt-dlp
       const outputTemplate = path.join(workDir, "source.%(ext)s");
