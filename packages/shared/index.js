@@ -125,6 +125,8 @@ function detectSourceType(url) {
   const v = (url || "").toLowerCase();
   if (v.includes("youtube.com") || v.includes("youtu.be")) return "youtube";
   if (v.includes("vimeo.com")) return "vimeo";
+  // Direct media files — m3u8 (HLS streams), mp4, mp3, wav, webm
+  if (v.match(/\.(m3u8|mp4|mp3|wav|webm|ogg|aac)(\?|$)/)) return "direct";
   return "unknown";
 }
 
@@ -148,7 +150,9 @@ function validateSourceUrl(url) {
     return "The URL is not valid.";
   }
   const sourceType = detectSourceType(url);
-  if (!["youtube", "vimeo"].includes(sourceType)) return "Only YouTube and Vimeo URLs are supported.";
+  if (!["youtube", "vimeo", "direct"].includes(sourceType)) {
+    return "Only YouTube, Vimeo, or direct media URLs (.mp4, .mp3, .m3u8) are supported.";
+  }
   return null;
 }
 

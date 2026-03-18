@@ -13,27 +13,35 @@ const POLL_INTERVAL = 15000;
 const CONTENT_MODES = {
   "camden-tribune": {
     label: "Camden Tribune",
-    instruction: "You are writing for Camden Tribune, an independent local news outlet covering Camden County, NC. Apply AP style. Focus on taxpayer impact, government accountability, and local community stakes. The audience is Camden County residents, voters, and taxpayers.",
+    instruction: `You are a staff reporter for Camden Tribune, an independent local news outlet based in Camden County, NC.
+
+GEOGRAPHIC INTELLIGENCE — apply this automatically:
+- If the content is about Camden County, NC specifically → write with full local framing. Name commissioners, reference Camden County taxpayers, connect to local impact.
+- If the content is about neighboring counties (Currituck, Pasquotank, Perquimans, Gates, Chowan, Dare, Hertford) or northeastern NC broadly → write with a regional framing. Note the proximity and relevance to Camden Tribune readers.
+- If the content is about North Carolina state government, policy, or issues → write with a statewide framing, noting NC-specific impact.
+- If the content is national news → write as a national story with local relevance noted where it exists. Do not force Camden County framing where it does not belong.
+
+Always apply AP style. Always lead with the most newsworthy fact. Always attribute claims to sources.`,
   },
   "meeting": {
     label: "Public Meeting",
-    instruction: "This is a public meeting recording. Focus on decisions made, votes taken, dollar amounts, and public impact. Document who said what. AP style.",
+    instruction: "This is a public meeting recording. Identify the governing body, jurisdiction, and date. Focus on decisions made, votes taken, dollar amounts, and public impact. Document who said what. Apply AP style. Note the geographic scope automatically.",
   },
   "interview": {
     label: "Interview",
-    instruction: "This is an interview. Extract the key narrative, most compelling quotes, and main takeaways. Structure as a profile or Q&A-inspired article.",
+    instruction: "This is an interview. Extract the key narrative, most compelling quotes, and main takeaways. Identify the subject and their relevance. Structure as a profile or Q&A-inspired article. Apply AP style.",
   },
   "podcast": {
     label: "Podcast",
-    instruction: "This is a podcast episode. Summarize the main topics discussed, key insights, and notable quotes. Tone: engaging and accessible.",
+    instruction: "This is a podcast episode. Summarize the main topics discussed, key insights, and notable quotes. Tone: engaging and accessible. Note the geographic scope if relevant.",
   },
   "news": {
     label: "News",
-    instruction: "This is general news content. Apply standard AP style journalism. Lead with the most newsworthy fact. Attribute all claims.",
+    instruction: "This is general news content. Apply standard AP style journalism. Lead with the most newsworthy fact. Attribute all claims. Determine geographic scope from the content itself.",
   },
   "generic": {
     label: "Generic",
-    instruction: "Produce a clean, accurate summary and article draft from this content. Use clear, professional language.",
+    instruction: "Produce a clean, accurate summary and article draft from this content. Use clear, professional language. Determine the appropriate framing and geographic scope from the content.",
   },
 };
 
@@ -428,7 +436,9 @@ INSTRUCTIONS:
     "grade_level": "Grade 10",
     "tone": "Firm, factual, taxpayer-focused"
   },
-  "photo_guidance": "Suggested photo description, framing, mood, and credit guidance."
+  "photo_guidance": "Suggested photo description, framing, mood, and credit guidance.",
+  "geographic_scope": "local_camden | regional_nc | statewide_nc | national",
+  "geographic_note": "One sentence explaining why this story matters to Camden Tribune readers specifically."
 }`;
 }
 

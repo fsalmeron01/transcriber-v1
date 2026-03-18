@@ -58,22 +58,41 @@ async function processMediaJob(jobPayload) {
   try {
     // Stage 1: Resolving source
     await updateJob(jobId, { status: "fetching", progress: 10 });
-    const outputTemplate = path.join(workDir, "source.%(ext)s");
-    const { title } = await detectTitleAndFilename(job.source_url, outputTemplate);
-    if (title) await updateJob(jobId, { title });
-    console.log(`[media] Job ${jobId} — downloading: "${title}"`);
 
-    // Stage 2: Downloading
-    await updateJob(jobId, { status: "fetching", progress: 20 });
-    await runCommand("yt-dlp", [
-      "-f", process.env.YTDLP_FORMAT || "bestaudio/best",
-      "-o", outputTemplate,
-      job.source_url,
-    ]);
+    let sourcePath;
 
-    const downloadedFiles = fs.readdirSync(workDir).map(n => path.join(workDir, n));
-    const sourcePath = downloadedFiles.find(f => fs.statSync(f).isFile());
-    if (!sourcePath) throw new Error("No source media file was downloaded.");
+    if (job.source_type === "direct") {
+      // Direct media URL — download with ffmpeg or curl
+      console.log(`[media] Job ${jobId} — direct media URL`);
+      const ext = (job.source_url.match(/\.(m3u8|mp4|mp3|wav|webm|ogg|aac)/i) || ["", "mp4"])[1].toLowerCase();
+      const dlPath = path.join(workDir, `source.${ext}`);
+      await updateJob(jobId, { status: "fetching", progress: 20, title: "Direct media" });
+      // Use ffmpeg to download HLS/direct streams
+      await runCommand("ffmpeg", [
+        "-y", "-i", job.source_url,
+        "-c", "copy",
+        dlPath,
+      ]);
+      sourcePath = dlPath;
+    } else {
+      // YouTube / Vimeo — use yt-dlp
+      const outputTemplate = path.join(workDir, "source.%(ext)s");
+      const { title } = await detectTitleAndFilename(job.source_url, outputTemplate);
+      if (title) await updateJob(jobId, { title });
+      console.log(`[media] Job ${jobId} — downloading: "${title}"`);
+
+      // Stage 2: Downloading
+      await updateJob(jobId, { status: "fetching", progress: 20 });
+      await runCommand("yt-dlp", [
+        "-f", process.env.YTDLP_FORMAT || "bestaudio/best",
+        "-o", outputTemplate,
+        job.source_url,
+      ]);
+
+      const downloadedFiles = fs.readdirSync(workDir).map(n => path.join(workDir, n));
+      sourcePath = downloadedFiles.find(f => fs.statSync(f).isFile());
+      if (!sourcePath) throw new Error("No source media file was downloaded.");
+    }
 
     // Stage 3: Extracting audio
     await updateJob(jobId, { status: "extracting-audio", progress: 40 });

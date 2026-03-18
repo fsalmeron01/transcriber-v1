@@ -184,7 +184,7 @@ export default function HomePage() {
         <div className="fade-up fade-up-3" style={{ background: "var(--charcoal)", border: "1px solid var(--rule)", borderTop: "2px solid var(--ct-blue)", borderRadius: 16, padding: "32px", position: "relative", overflow: "hidden", marginBottom: 48 }}>
           <form onSubmit={handleSubmit}>
             <label style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "var(--ct-blue-light)", marginBottom: 10 }}>Source URL</label>
-            <input type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://vimeo.com/... or https://youtube.com/watch?v=..." required
+            <input type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://vimeo.com/... or https://youtube.com/... or direct .mp4/.m3u8 URL" required
               style={{ width: "100%", padding: "14px 18px", background: "var(--ink)", border: "1px solid var(--charcoal-light)", borderRadius: 10, color: "#fff", fontSize: 15, fontFamily: "var(--font-mono)", marginBottom: 28, outline: "none", transition: "border-color 0.2s" }}
               onFocus={e => e.target.style.borderColor = "var(--ct-blue)"}
               onBlur={e  => e.target.style.borderColor = "var(--charcoal-light)"}
