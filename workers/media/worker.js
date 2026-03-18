@@ -62,15 +62,26 @@ async function processMediaJob(jobPayload) {
     let sourcePath;
 
     if (job.source_type === "direct") {
-      // Direct media URL — download with ffmpeg or curl
       console.log(`[media] Job ${jobId} — direct media URL`);
-      const ext = (job.source_url.match(/\.(m3u8|mp4|mp3|wav|webm|ogg|aac)/i) || ["", "mp4"])[1].toLowerCase();
-      const dlPath = path.join(workDir, `source.${ext}`);
+      const dlPath = path.join(workDir, "source.mp4");
       await updateJob(jobId, { status: "fetching", progress: 20, title: "Direct media" });
-      // Use ffmpeg to download HLS/direct streams
+
+      // Always use the full safe ffmpeg flags for ALL direct URLs.
+      // These flags are harmless for plain mp4/mp3 files AND required for
+      // HLS (.m3u8), DASH, and government meeting platform streams.
+      // This means eSCRIBE, Granicus, Legistar, and any CDN stream
+      // will all work without needing separate detection logic.
+      console.log(`[media] Job ${jobId} — downloading with universal ffmpeg flags`);
       await runCommand("ffmpeg", [
-        "-y", "-i", job.source_url,
+        "-y",
+        "-allowed_extensions", "ALL",
+        "-protocol_whitelist", "file,http,https,tcp,tls,crypto,data",
+        "-analyzeduration", "20M",
+        "-probesize", "20M",
+        "-i", job.source_url,
         "-c", "copy",
+        "-movflags", "+faststart",
+        "-t", "14400",   // max 4 hours — covers any meeting length
         dlPath,
       ]);
       sourcePath = dlPath;
