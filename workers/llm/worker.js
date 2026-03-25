@@ -482,8 +482,8 @@ async function saveSummary(jobId, r) {
       headline, subtitle, summary_text, newspack_excerpt, article_draft, key_quotes_json,
       categories_json, tags_json, yoast_json,
       headline_heat_score, headline_heat_label, seo_strength_score,
-      legal_risk_level, legal_flags_json, readability_json, photo_guidance
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13,$14,$15,$16,$17::jsonb,$18::jsonb,$19)
+      legal_risk_level, legal_flags_json, readability_json, photo_guidance, social_json
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13,$14,$15,$16,$17::jsonb,$18::jsonb,$19,$20::jsonb)
     ON CONFLICT (job_id) DO UPDATE SET
       mode=EXCLUDED.mode, mode_emoji=EXCLUDED.mode_emoji,
       headline=EXCLUDED.headline, subtitle=EXCLUDED.subtitle,
@@ -495,6 +495,7 @@ async function saveSummary(jobId, r) {
       seo_strength_score=EXCLUDED.seo_strength_score,
       legal_risk_level=EXCLUDED.legal_risk_level, legal_flags_json=EXCLUDED.legal_flags_json,
       readability_json=EXCLUDED.readability_json, photo_guidance=EXCLUDED.photo_guidance,
+      social_json=EXCLUDED.social_json,
       updated_at=NOW()
   `, [
     jobId,
