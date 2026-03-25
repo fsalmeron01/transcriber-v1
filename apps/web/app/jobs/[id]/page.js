@@ -545,9 +545,11 @@ export default function JobPage() {
           {/* TRANSCRIPT */}
           {tab === "social" && (
             <div>
-              {!s?.social_json || Object.keys(s.social_json || {}).length === 0 ? (
-                <div style={{ color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                  Social media posts will appear here after the article is generated.
+              {!s?.social_json || !s.social_json.facebook ? (
+                <div style={{ padding: "32px", textAlign: "center", border: "1px dashed var(--rule)", borderRadius: 12 }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 28, color: "var(--rule)", marginBottom: 12 }}>📱</div>
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)", letterSpacing: 1.5 }}>SOCIAL POSTS NOT YET GENERATED</p>
+                  <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8 }}>Use the re-run button on the home page to regenerate this job with social media posts.</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
